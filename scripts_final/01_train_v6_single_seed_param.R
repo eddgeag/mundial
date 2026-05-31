@@ -15,12 +15,17 @@
 #
 # ============================================================
 
+pkgs <- c("data.table", "caret", "nnet", "ranger", "xgboost")
+
+missing <- setdiff(pkgs, rownames(installed.packages()))
+
+if (length(missing) > 0) {
+  message("Instalando paquetes faltantes: ", paste(missing, collapse = ", "))
+  install.packages(missing, repos = "https://cloud.r-project.org", dependencies = TRUE)
+}
+
 suppressPackageStartupMessages({
-  library(data.table)
-  library(caret)
-  library(nnet)
-  library(ranger)
-  library(xgboost)
+  invisible(lapply(pkgs, require, character.only = TRUE))
 })
 
 # ------------------------------------------------------------
