@@ -1,0 +1,34 @@
+# R / RStudio
+.Rhistory
+.RData
+.Ruserdata
+.Rproj.user/
+
+# Archivos pesados de modelos/resultados
+*.rds
+*.RDS
+*.rda
+*.RData
+*.h5
+*.hdf5
+*.csv
+
+# Resultados generados
+outputs/
+results/
+modelos/
+models/
+logs/
+figures/
+plots/
+
+# Temporales
+*.tmp
+*.log
+*.bak
+*.csv~
+*.xlsx~
+
+# Sistema
+.DS_Store
+Thumbs.db
