@@ -19,7 +19,7 @@ export LOG_DIR="${PROJECT_DIR}/logs"
 export TRAIN_SCRIPT="${SCRIPTS_DIR}/01_train_v6_single_seed_param.R"
 
 # Recursos
-export CORES="${CORES:-4}"
+export CORES="${CORES:-3}"
 
 # BLAS / OpenMP
 export OMP_NUM_THREADS="${CORES}"
