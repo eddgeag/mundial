@@ -1040,17 +1040,16 @@ run_one_xgb <- function(i, pars, nrounds, early_rounds, grid_label) {
     colsample_bytree = pars$colsample_bytree,
     lambda = pars$lambda,
     alpha = pars$alpha,
-    seed = SEED + 900L + i,
     nthread = N_CORES
   )
   
   set.seed(SEED + 900L + i)
   
-  model_xgb_i <- xgb.train(
+  model_xgb_i <- xgboost::xgb.train(
     params = params_i,
     data = dtrain,
     nrounds = nrounds,
-    evals = list(test = dtest),
+    watchlist = list(test = dtest),
     early_stopping_rounds = early_rounds,
     print_every_n = 200,
     verbose = 1
@@ -1240,7 +1239,7 @@ metrics_xgb <- xgb_tuning_results[1, .(
 
 print(metrics_xgb)
 
-importance_xgb <- xgb.importance(
+importance_xgb <- xgboost::xgb.importance(
   feature_names = colnames(x_train),
   model = model_xgb
 )
@@ -1605,7 +1604,7 @@ saveRDS(
   file.path(out_dir, "model_random_forest_v6_tuned.rds")
 )
 
-xgb.save(
+xgboost::xgb.save(
   model_xgb,
   file.path(out_dir, "model_xgboost_v6_tuned.xgb")
 )
