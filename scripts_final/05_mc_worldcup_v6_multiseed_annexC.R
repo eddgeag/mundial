@@ -42,7 +42,7 @@ suppressPackageStartupMessages({
 # 0. Configuración
 # ------------------------------------------------------------
 
-set.seed(202606)
+set.seed(2026)
 
 # Entradas multiseed
 base_multiseed_dir <- "resultados_server/v6_multiseed"
