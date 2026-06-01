@@ -85,44 +85,30 @@ fwrite(
   file.path(out_dir, "multiseed_model_metrics_all_v6.csv")
 )
 
+if (!"model" %in% names(metrics_all)) {
+  stop("No existe columna 'model' en model_comparison_v6.csv")
+}
+
 metric_cols <- intersect(
   c("Accuracy", "BalancedAccuracy", "LogLoss"),
   names(metrics_all)
 )
 
-if (!"model" %in% names(metrics_all)) {
-  stop("No existe columna 'model' en model_comparison_v6.csv")
-}
-
 metrics_summary <- metrics_all[
   ,
-  c(
-    .N,
-    lapply(.SD, mean, na.rm = TRUE),
-    lapply(.SD, sd, na.rm = TRUE)
+  .(
+    n_seeds = .N,
+    mean_Accuracy = if ("Accuracy" %in% names(.SD)) mean(Accuracy, na.rm = TRUE) else NA_real_,
+    sd_Accuracy = if ("Accuracy" %in% names(.SD)) sd(Accuracy, na.rm = TRUE) else NA_real_,
+    mean_BalancedAccuracy = if ("BalancedAccuracy" %in% names(.SD)) mean(BalancedAccuracy, na.rm = TRUE) else NA_real_,
+    sd_BalancedAccuracy = if ("BalancedAccuracy" %in% names(.SD)) sd(BalancedAccuracy, na.rm = TRUE) else NA_real_,
+    mean_LogLoss = if ("LogLoss" %in% names(.SD)) mean(LogLoss, na.rm = TRUE) else NA_real_,
+    sd_LogLoss = if ("LogLoss" %in% names(.SD)) sd(LogLoss, na.rm = TRUE) else NA_real_
   ),
-  by = model,
-  .SDcols = metric_cols
+  by = model
 ]
 
-# Renombrar columnas
-old_names <- names(metrics_summary)
-mean_names <- paste0("mean_", metric_cols)
-sd_names   <- paste0("sd_", metric_cols)
-
-setnames(
-  metrics_summary,
-  old = c(metric_cols, paste0(metric_cols, ".1")),
-  new = c(mean_names, sd_names)
-)
-
-# Ranking recomendado para MC:
-# menor LogLoss, luego mayor BalancedAccuracy, luego mayor Accuracy
-if ("mean_LogLoss" %in% names(metrics_summary)) {
-  setorder(metrics_summary, mean_LogLoss, -mean_BalancedAccuracy, -mean_Accuracy)
-} else {
-  setorder(metrics_summary, -mean_BalancedAccuracy, -mean_Accuracy)
-}
+setorder(metrics_summary, mean_LogLoss, -mean_BalancedAccuracy, -mean_Accuracy)
 
 metrics_summary[, rank_for_mc := .I]
 
@@ -143,7 +129,6 @@ writeLines(
   best_model,
   file.path(out_dir, "best_model_for_mc_v6.txt")
 )
-
 # ============================================================
 # 3. Consolidar predicciones fixtures 2026
 # ============================================================
