@@ -150,62 +150,39 @@ fwrite(
 cat("\nColumnas en fixtures predictions:\n")
 print(names(fixtures_all))
 
-# ============================================================
-# 4. Detectar columnas de probabilidad
-# ============================================================
-
-prob_cols <- grep(
-  "prob|p_home|p_draw|p_away|HomeWin|Draw|AwayWin",
-  names(fixtures_all),
-  value = TRUE,
-  ignore.case = TRUE
+setnames(
+  fixtures_mean,
+  old = c(
+    "ensemble_p_team_A_win_mean",
+    "ensemble_p_draw_mean",
+    "ensemble_p_team_B_win_mean",
+    "ensemble_p_team_A_win_sd",
+    "ensemble_p_draw_sd",
+    "ensemble_p_team_B_win_sd"
+  ),
+  new = c(
+    "p_team_A_win",
+    "p_draw",
+    "p_team_B_win",
+    "sd_team_A_win",
+    "sd_draw",
+    "sd_team_B_win"
+  ),
+  skip_absent = TRUE
 )
 
-prob_cols <- setdiff(prob_cols, c("predicted_class", "pred_class", "prediction"))
+fixtures_mean[
+  ,
+  pred_class_mean := c("Team_A_win", "Draw", "Team_B_win")[
+    max.col(.SD, ties.method = "first")
+  ],
+  .SDcols = c("p_team_A_win", "p_draw", "p_team_B_win")
+]
 
-cat("\nColumnas candidatas de probabilidad:\n")
-print(prob_cols)
-
-# Columnas de identificación posibles
-id_candidates <- c(
-  "match_id", "fixture_id", "game_id",
-  "group", "round", "stage",
-  "home_team", "away_team",
-  "team_home", "team_away",
-  "home", "away",
-  "date"
-)
-
-id_cols <- intersect(id_candidates, names(fixtures_all))
-
-if (length(id_cols) == 0) {
-  stop("No se detectaron columnas ID de partido. Revisar nombres de fixtures_2026_predictions_all_models_v6.csv")
-}
-
-# Si hay columna model, promediar solo el mejor modelo
-if ("model" %in% names(fixtures_all)) {
-  fixtures_model <- fixtures_all[model == best_model]
-  
-  if (nrow(fixtures_model) == 0) {
-    cat("\nNo encontré exactamente el best_model en fixtures. Modelos disponibles:\n")
-    print(unique(fixtures_all$model))
-    stop("El nombre del modelo en fixtures no coincide con model_comparison.")
-  }
-  
-} else {
-  fixtures_model <- copy(fixtures_all)
-}
-
-# Mantener solo columnas numéricas candidatas
-prob_cols_num <- prob_cols[sapply(fixtures_model[, ..prob_cols], is.numeric)]
-
-if (length(prob_cols_num) == 0) {
-  stop("No se detectaron columnas numéricas de probabilidad.")
-}
-
-cat("\nColumnas numéricas usadas para promedio:\n")
-print(prob_cols_num)
-
+fixtures_mean[
+  ,
+  prob_sum := p_team_A_win + p_draw + p_team_B_win
+]
 # ============================================================
 # 5. Promedio y SD por partido entre seeds
 # ============================================================
