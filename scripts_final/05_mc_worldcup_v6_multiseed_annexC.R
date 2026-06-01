@@ -54,7 +54,7 @@ if (!dir.exists(mc_out_dir)) {
 }
 
 # Número de simulaciones. Para prueba usa 1000-5000; final puedes subir a 50000-100000.
-N_SIM <- 1000
+N_SIM <- 50
 
 # En grupos se usa el promedio multiseed ya consolidado.
 GROUP_PROB_SOURCE <- "multiseed_mean"
