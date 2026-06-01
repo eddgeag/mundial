@@ -149,7 +149,67 @@ fwrite(
 
 cat("\nColumnas en fixtures predictions:\n")
 print(names(fixtures_all))
+# ============================================================
+# 4. Columnas explícitas para MC
+# ============================================================
 
+prob_cols_num <- c(
+  "ensemble_p_team_A_win",
+  "ensemble_p_draw",
+  "ensemble_p_team_B_win"
+)
+
+missing_prob_cols <- setdiff(prob_cols_num, names(fixtures_all))
+
+if (length(missing_prob_cols) > 0) {
+  stop(
+    "Faltan columnas de probabilidad necesarias para MC: ",
+    paste(missing_prob_cols, collapse = ", ")
+  )
+}
+
+cat("\nColumnas usadas para MC:\n")
+print(prob_cols_num)
+
+id_cols <- c("match_id", "stage", "group", "team_A", "team_B")
+id_cols <- intersect(id_cols, names(fixtures_all))
+
+if (!all(c("match_id", "team_A", "team_B") %in% id_cols)) {
+  stop("Faltan columnas básicas: match_id, team_A, team_B")
+}
+
+fixtures_model <- copy(fixtures_all)
+# ============================================================
+# 5. Promedio y SD por partido entre seeds
+# ============================================================
+
+mean_dt <- fixtures_model[
+  ,
+  lapply(.SD, mean, na.rm = TRUE),
+  by = id_cols,
+  .SDcols = prob_cols_num
+]
+
+sd_dt <- fixtures_model[
+  ,
+  lapply(.SD, sd, na.rm = TRUE),
+  by = id_cols,
+  .SDcols = prob_cols_num
+]
+
+setnames(
+  mean_dt,
+  old = prob_cols_num,
+  new = paste0(prob_cols_num, "_mean")
+)
+
+setnames(
+  sd_dt,
+  old = prob_cols_num,
+  new = paste0(prob_cols_num, "_sd")
+)
+
+fixtures_mean <- merge(mean_dt, sd_dt, by = id_cols, all = TRUE)
 setnames(
   fixtures_mean,
   old = c(
@@ -183,38 +243,6 @@ fixtures_mean[
   ,
   prob_sum := p_team_A_win + p_draw + p_team_B_win
 ]
-# ============================================================
-# 5. Promedio y SD por partido entre seeds
-# ============================================================
-
-mean_dt <- fixtures_model[
-  ,
-  lapply(.SD, mean, na.rm = TRUE),
-  by = id_cols,
-  .SDcols = prob_cols_num
-]
-
-sd_dt <- fixtures_model[
-  ,
-  lapply(.SD, sd, na.rm = TRUE),
-  by = id_cols,
-  .SDcols = prob_cols_num
-]
-
-setnames(
-  mean_dt,
-  old = prob_cols_num,
-  new = paste0(prob_cols_num, "_mean")
-)
-
-setnames(
-  sd_dt,
-  old = prob_cols_num,
-  new = paste0(prob_cols_num, "_sd")
-)
-
-fixtures_mean <- merge(mean_dt, sd_dt, by = id_cols, all = TRUE)
-
 # ============================================================
 # 6. Intentar crear predicción final por máxima probabilidad
 # ============================================================
