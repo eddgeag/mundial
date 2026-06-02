@@ -4,16 +4,20 @@
 .Ruserdata
 .Rproj.user/
 
-# Archivos pesados de modelos/resultados
+# Modelos pesados / binarios
 *.rds
 *.RDS
 *.rda
-*.RData
 *.h5
 *.hdf5
-*.csv
+*.xgb
+*.ubj
 
-# Resultados generados
+# Resultados generados pesados
+resultados_server/
+resultados_server.zip
+resultados_server*.zip
+
 outputs/
 results/
 modelos/
@@ -22,13 +26,20 @@ logs/
 figures/
 plots/
 
-# Temporales
-*.tmp
+# Logs y temporales
 *.log
+*.tmp
 *.bak
 *.csv~
 *.xlsx~
 
+# Comprimidos
+*.zip
+*.tar
+*.tar.gz
+*.7z
+
 # Sistema
 .DS_Store
 Thumbs.db
+.positai
