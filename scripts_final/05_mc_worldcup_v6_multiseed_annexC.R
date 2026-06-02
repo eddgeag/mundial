@@ -42,19 +42,38 @@ suppressPackageStartupMessages({
 # 0. Configuración
 # ------------------------------------------------------------
 
-set.seed(2026)
+# ------------------------------------------------------------
+# 0. Configuración parametrizable para sensibilidad
+# ------------------------------------------------------------
+
+MC_SEED <- as.integer(Sys.getenv("MC_SEED", "2026"))
+set.seed(MC_SEED)
 
 # Entradas multiseed
-base_multiseed_dir <- "resultados_server/v6_multiseed"
-consolidated_dir   <- "resultados_server/v6_multiseed_consolidated"
-mc_out_dir         <- file.path(consolidated_dir, "MONTE_CARLO_V6_MULTISEED_OFFICIAL_ANNEXC")
+base_multiseed_dir <- Sys.getenv(
+  "BASE_MULTISEED_DIR",
+  "resultados_server/v6_multiseed"
+)
+
+consolidated_dir <- Sys.getenv(
+  "CONSOLIDATED_DIR",
+  "resultados_server/v6_multiseed_consolidated"
+)
+
+# Número de simulaciones.
+N_SIM <- as.integer(Sys.getenv("N_SIM", "100000"))
+
+# Nombre de la corrida. Si no das tag, conserva el nombre oficial.
+MC_OUT_TAG <- Sys.getenv(
+  "MC_OUT_TAG",
+  "MONTE_CARLO_V6_MULTISEED_OFFICIAL_ANNEXC"
+)
+
+mc_out_dir <- file.path(consolidated_dir, MC_OUT_TAG)
 
 if (!dir.exists(mc_out_dir)) {
   dir.create(mc_out_dir, recursive = TRUE)
 }
-
-# Número de simulaciones. Para prueba usa 1000-5000; final puedes subir a 50000-100000.
-N_SIM <- 100000
 
 # En grupos se usa el promedio multiseed ya consolidado.
 GROUP_PROB_SOURCE <- "multiseed_mean"
@@ -123,7 +142,8 @@ cat("\n==============================\n")
 cat("MONTE CARLO V6 MULTISEED OFFICIAL ANNEX C CONFIG\n")
 cat("==============================\n")
 cat("N_SIM:", N_SIM, "\n")
-cat("Seeds:", paste(seed_info$seed, collapse = ", "), "\n")
+cat("MC_SEED:", MC_SEED, "\n")
+cat("Seeds modelo:", paste(seed_info$seed, collapse = ", "), "\n")
 cat("GROUP_PROB_SOURCE:", GROUP_PROB_SOURCE, "\n")
 cat("KO_PROB_SOURCE:", KO_PROB_SOURCE, "\n")
 cat("pred_file:", pred_file, "\n")
@@ -2169,6 +2189,8 @@ if (length(ko_match_log_sample) > 0) {
 
 metadata_out <- list(
   n_sim = N_SIM,
+  mc_seed = MC_SEED,
+  mc_out_tag = MC_OUT_TAG,
   group_prob_source = GROUP_PROB_SOURCE,
   ko_prob_source = KO_PROB_SOURCE,
   use_dirichlet_group = USE_DIRICHLET_GROUP,
