@@ -54,7 +54,7 @@ if (!dir.exists(mc_out_dir)) {
 }
 
 # Número de simulaciones. Para prueba usa 1000-5000; final puedes subir a 50000-100000.
-N_SIM <- 50
+N_SIM <- 100000
 
 # En grupos se usa el promedio multiseed ya consolidado.
 GROUP_PROB_SOURCE <- "multiseed_mean"
@@ -97,7 +97,7 @@ required_seed_files <- c(
   "model_metadata_v6.rds",
   "model_multinomial_v6.rds",
   "model_random_forest_v6_tuned.rds",
-  "model_xgboost_v6_tuned.xgb",
+  "model_xgboost_v6_tuned.ubj",
   "training_v6_feature_engineered.csv",
   "fixtures_2026_v6_feature_engineered.csv"
 )
@@ -299,7 +299,7 @@ load_seed_bundle <- function(seed_dir, seed) {
     metadata = metadata_i,
     model_multinom = readRDS(file.path(seed_dir, "model_multinomial_v6.rds")),
     model_rf = readRDS(file.path(seed_dir, "model_random_forest_v6_tuned.rds")),
-    model_xgb = xgb.load(file.path(seed_dir, "model_xgboost_v6_tuned.xgb")),
+    model_xgb = xgb.load(file.path(seed_dir, "model_xgboost_v6_tuned.ubj")),
     w_rf = w$w_rf[1],
     w_multinom = w$w_multinom[1],
     w_xgb = w$w_xgb[1]
@@ -982,59 +982,84 @@ predict_match_probs_dynamic <- function(team_A, team_B) {
   out
 }
 # ------------------------------------------------------------
-# 6B. Precalcular probabilidades KO para todos los cruces posibles
+# 6B. Cargar o precalcular probabilidades KO para todos los cruces posibles
 # ------------------------------------------------------------
 
-cat("\n==============================\n")
-cat("PRECÁLCULO DE PROBABILIDADES KO\n")
-cat("==============================\n")
-
-all_ko_pairs <- CJ(
-  team_A = teams,
-  team_B = teams,
-  unique = TRUE
-)[team_A != team_B]
-
-cat("Cruces ordenados a precalcular:", nrow(all_ko_pairs), "\n")
-
-pb_ko <- utils::txtProgressBar(
-  min = 0,
-  max = nrow(all_ko_pairs),
-  style = 3
+ko_precalc_file <- file.path(
+  mc_out_dir,
+  "mc_KO_dynamic_prob_precomputed_all_pairs_v6MS.csv"
 )
 
-t0_ko <- Sys.time()
-
-ko_prob_table <- rbindlist(lapply(seq_len(nrow(all_ko_pairs)), function(i) {
+if (file.exists(ko_precalc_file)) {
   
-  if (i %% 25 == 0 || i == 1 || i == nrow(all_ko_pairs)) {
-    utils::setTxtProgressBar(pb_ko, i)
-    }
+  cat("\n==============================\n")
+  cat("CARGANDO PROBABILIDADES KO PRECALCULADAS\n")
+  cat("==============================\n")
+  cat("Archivo:", ko_precalc_file, "\n")
   
-  predict_match_probs_dynamic(
-    team_A = all_ko_pairs$team_A[i],
-    team_B = all_ko_pairs$team_B[i]
+  ko_prob_table <- fread(ko_precalc_file)
+  
+  if (!"cache_key" %in% names(ko_prob_table)) {
+    ko_prob_table[, cache_key := paste(team_A, team_B, sep = "___")]
+  }
+  
+  setkey(ko_prob_table, cache_key)
+  
+  cat("Cruces KO cargados:", nrow(ko_prob_table), "\n")
+  
+} else {
+  
+  cat("\n==============================\n")
+  cat("PRECÁLCULO DE PROBABILIDADES KO\n")
+  cat("==============================\n")
+  
+  all_ko_pairs <- CJ(
+    team_A = teams,
+    team_B = teams,
+    unique = TRUE
+  )[team_A != team_B]
+  
+  cat("Cruces ordenados a precalcular:", nrow(all_ko_pairs), "\n")
+  
+  pb_ko <- utils::txtProgressBar(
+    min = 0,
+    max = nrow(all_ko_pairs),
+    style = 3
   )
-}), fill = TRUE)
+  
+  t0_ko <- Sys.time()
+  
+  ko_prob_table <- rbindlist(lapply(seq_len(nrow(all_ko_pairs)), function(i) {
+    
+    if (i %% 25 == 0 || i == 1 || i == nrow(all_ko_pairs)) {
+      utils::setTxtProgressBar(pb_ko, i)
+    }
+    
+    predict_match_probs_dynamic(
+      team_A = all_ko_pairs$team_A[i],
+      team_B = all_ko_pairs$team_B[i]
+    )
+  }), fill = TRUE)
+  
+  close(pb_ko)
+  
+  cat("\nTiempo precálculo KO:\n")
+  print(Sys.time() - t0_ko)
+  
+  ko_prob_table[, cache_key := paste(team_A, team_B, sep = "___")]
+  setkey(ko_prob_table, cache_key)
+  
+  safe_fwrite(
+    ko_prob_table,
+    ko_precalc_file
+  )
+  
+  cat("\nProbabilidades KO precalculadas:", nrow(ko_prob_table), "\n")
+}
 
-close(pb_ko)
-cat("\nTiempo precálculo KO:\n")
-print(Sys.time() - t0_ko)
-ko_prob_table[, cache_key := paste(team_A, team_B, sep = "___")]
-setkey(ko_prob_table, cache_key)
-
-safe_fwrite(
-  ko_prob_table,
-  file.path(mc_out_dir, "mc_KO_dynamic_prob_precomputed_all_pairs_v6MS.csv")
-)
-
-cat("\nProbabilidades KO precalculadas:", nrow(ko_prob_table), "\n")
-
-
-
-
-# Cache de probabilidades KO para no recalcular el mismo cruce miles de veces.
-# ko_prob_cache <- new.env(parent = emptyenv())
+# ------------------------------------------------------------
+# 6C. Usar probabilidades KO precalculadas durante la simulación
+# ------------------------------------------------------------
 
 get_ko_probs_cached <- function(team_A, team_B) {
   key <- paste(team_A, team_B, sep = "___")
@@ -1047,38 +1072,37 @@ get_ko_probs_cached <- function(team_A, team_B) {
   
   out
 }
+
 simulate_ko_match_dynamic <- function(team_A, team_B) {
-
+  
   probs <- get_ko_probs_cached(team_A, team_B)
-
+  
   p <- normalize_probs(c(
     probs$p_A_win,
     probs$p_draw,
     probs$p_B_win
   ))
-
+  
   if (USE_DIRICHLET_KO) {
     p <- rdirichlet1(pmax(p * DIRICHLET_KO_CONCENTRATION, 1e-4))
   }
-
+  
   result_90 <- sample(
     x = c("HomeWin", "Draw", "AwayWin"),
     size = 1,
     prob = p
   )
-
-  # Si no hay empate, avanza quien gana en 90.
+  
   if (result_90 == "HomeWin") {
     adv <- team_A
   } else if (result_90 == "AwayWin") {
     adv <- team_B
   } else {
-    # Si empatan, decidir penales/prolongación.
     p_pen_A <- p[1] / (p[1] + p[3])
     p_pen_A <- pmin(pmax(p_pen_A, PENALTY_SHRINK_MIN), PENALTY_SHRINK_MAX)
     adv <- ifelse(runif(1) < p_pen_A, team_A, team_B)
   }
-
+  
   data.table(
     team_A = team_A,
     team_B = team_B,
