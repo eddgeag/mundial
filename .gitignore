@@ -1,45 +1,80 @@
+# ============================================================
 # R / RStudio
+# ============================================================
 .Rhistory
 .RData
 .Ruserdata
 .Rproj.user/
 
+# ============================================================
 # Modelos pesados / binarios
+# ============================================================
 *.rds
 *.RDS
 *.rda
+*.RData
 *.h5
 *.hdf5
 *.xgb
 *.ubj
 
-# Resultados generados pesados
+# ============================================================
+# Resultados generados / salidas del proyecto
+# ============================================================
 resultados_server/
 resultados_server.zip
 resultados_server*.zip
 
-outputs/
+resultados/
+resultado/
 results/
+result/
+outputs/
+output/
+
 modelos/
 models/
+
 logs/
 figures/
 plots/
+reports/
+datos/
+# ============================================================
+# CSVs generados dentro de carpetas de resultados
+# Ojo: NO ignora todos los CSV del proyecto, solo los de resultados
+# ============================================================
+resultados_server/**/*.csv
+resultados/**/*.csv
+results/**/*.csv
+outputs/**/*.csv
+output/**/*.csv
+reports/**/*.csv
 
+# ============================================================
 # Logs y temporales
+# ============================================================
 *.log
 *.tmp
 *.bak
 *.csv~
 *.xlsx~
+*.Rout
+*.Rout.save
 
+# ============================================================
 # Comprimidos
+# ============================================================
 *.zip
 *.tar
 *.tar.gz
+*.tgz
 *.7z
+*.rar
 
+# ============================================================
 # Sistema
+# ============================================================
 .DS_Store
 Thumbs.db
 .positai
